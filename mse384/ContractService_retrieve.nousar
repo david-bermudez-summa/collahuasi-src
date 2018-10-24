@@ -1,0 +1,195 @@
+package mse384
+
+import com.mincom.ellipse.client.connection.ConnectionHolder
+import com.mincom.ellipse.attribute.Attribute
+import com.mincom.ellipse.edoi.ejb.msf384.MSF384Key
+import com.mincom.ellipse.edoi.ejb.msf384.MSF384Rec
+import com.mincom.ellipse.edoi.ejb.msf38a.MSF38AKey
+import com.mincom.ellipse.edoi.ejb.msf38a.MSF38ARec
+import com.mincom.ellipse.hook.hooks.ServiceHook
+import com.mincom.ellipse.lsi.buffer.context.ContextRetrieveAgeingMethodsRequestInstance
+import com.mincom.ellipse.lsi.implementation.InteractionManagerImpl
+import com.mincom.ellipse.script.ContextCallback
+import com.mincom.ellipse.script.impl.ContextHandler
+import com.mincom.ellipse.script.util.ServiceWrapper.GroovyService
+import com.mincom.ellipse.service.meta.Service
+import com.mincom.ellipse.service.meta.ServiceMethod
+import com.mincom.ellipse.spring.EllipseContextLoader
+import com.mincom.ellipse.types.m0000.instances.DefaultMaxinst
+import com.mincom.enterpriseservice.ellipse.ConnectionId
+import com.mincom.enterpriseservice.ellipse.ESBIService
+import com.mincom.enterpriseservice.ellipse.EllipseSubroutineService
+import com.mincom.enterpriseservice.ellipse.EllipseSubroutineServiceLocator
+import com.mincom.enterpriseservice.ellipse.ErrorMessageDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractService
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceCreateReplyDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceCreateRequestDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceModifyReplyDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceModifyRequestDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceReadReplyDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceRetrieveReplyCollectionDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceRetrieveReplyDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceRetrieveRequestDTO
+import com.mincom.enterpriseservice.ellipse.contract.ContractServiceRetrieveRequiredAttributesDTO
+import com.mincom.enterpriseservice.exception.EnterpriseServiceOperationException
+import com.mincom.eql.Constraint
+import com.mincom.eql.impl.QueryImpl
+import com.mincom.ews.service.connectivity.OperationContext
+import com.mincom.ria.service.impl.ContextServiceHandlerImpl
+
+import groovy.lang.Closure
+
+import java.io.Serializable
+import java.text.DecimalFormat
+import java.util.ArrayDeque
+import java.util.Arrays
+import java.util.Queue
+
+import org.springframework.beans.factory.support.DefaultListableBeanFactory
+
+
+public class ContractService_retrieve extends ServiceHook {
+
+	public String Version = "v1 - 20180714";
+	@Override
+	public Object onPreExecute(Object input) {
+		log.info(Version);
+		log.info("onPreExecute");
+		
+	}
+	
+    @Override
+    public Object onPostExecute(Object input, Object result) {
+		log.info(Version);
+		log.info("onPostExecute");
+		log.info(tools.commarea.EmployeeId);
+		
+		/*ContractServiceRetrieveReplyCollectionDTO resultDTO = (ContractServiceRetrieveReplyCollectionDTO) result;		
+		ContractServiceRetrieveRequestDTO requestInput = (ContractServiceRetrieveRequestDTO) input;
+		
+		String value = getCustomValue(requestInput.getCustomAttributes(),"customSearch");
+		if (value != null){
+			return result;
+		} else {
+			result = retrieveAllContracts(input)
+			return result;
+		}*/
+    }
+	
+	public ContractServiceRetrieveReplyCollectionDTO retrieveAllContracts(ContractServiceRetrieveRequestDTO requestInput){
+		log.info("retrieveAllContracts");
+		
+		ConnectionId connectionId = ConnectionHolder.getConnectionId();
+		Object groovyService = tools.service.get('Contract')
+		log.info("service class:" + groovyService.getClass().toString())
+
+		Service service = groovyService.service;
+		log.info("service class:" + service.getClass().toString())
+		
+		ContractServiceRetrieveReplyCollectionDTO result = _invokeMethod(service, "retrieve", requestInput)()
+		result = validateResults(result);
+
+		return result;
+	}
+	
+	private ContractServiceRetrieveReplyCollectionDTO validateResults(ContractServiceRetrieveReplyCollectionDTO result){
+		ArrayList<ContractServiceRetrieveReplyDTO> newResult = new ArrayList<ContractServiceRetrieveReplyDTO>();
+		
+		for (ContractServiceRetrieveReplyDTO element : result.replyElements){
+			
+			if (isValidItem(element)){
+				newResult.add(element);
+			} 
+		}
+		
+		result.replyElements = (ContractServiceRetrieveReplyDTO[]) newResult.toArray();
+		
+		return result;
+	}
+	
+	private boolean isValidItem(ContractServiceRetrieveReplyDTO resultDTO){
+		
+		String employeeId = tools.commarea.EmployeeId;
+		
+		if (resultDTO.getRespCode1().trim().equals(employeeId.trim()) ||
+			resultDTO.getRespCode2().trim().equals(employeeId.trim()) ||
+			resultDTO.getRespCode3().trim().equals(employeeId.trim())){
+		
+			return 	true;
+		} else {
+			return false;
+		}
+	}
+	
+	private Attribute setNewCustomValue( String fieldName, Object value){
+		Attribute att = new Attribute();
+		att.setName(fieldName)
+		att.setValue(value.toString());
+		return att;
+	}
+	
+	private void setCustomValue(Attribute[] atts, String fieldName, Object value){
+		for (Attribute att : atts){
+			if(att.getName().equals(fieldName)){
+				if (value instanceof BigDecimal){
+					att.setValue((BigDecimal)value);
+				} else if (value instanceof String){
+					att.setValue((String)value);
+				}
+			}
+		}
+	}
+	
+	private Object getCustomValue(Attribute[] atts, String fieldName){
+		for (Attribute att : atts){
+			if(att.getName().equals(fieldName)){
+				return att.getValue();
+			}
+		}
+		
+		return null;
+	}
+	
+	
+	public Object _invokeMethod(Service service ,String name, Object obj) throws Exception
+	{
+		Serializable[] serializable = new Serializable[2];
+		serializable[0] = Integer.valueOf(1000)
+		serializable[1] = Boolean.valueOf(true)
+		
+		ServiceMethod method = service.getMethod(name);
+		apply(method, new ArrayDeque(Arrays.asList(serializable)));
+		apply(method, new ArrayDeque(Arrays.asList((Object[])obj)));
+		
+		return method.invoke();
+	}
+		 
+	private void apply(ServiceMethod method, Queue<?> input) throws Exception
+	{
+		for (int i = 1; !input.isEmpty(); i++) {
+			setDTO(method, input, i);
+		}
+	}
+	
+	private void setDTO(ServiceMethod method, Queue<?> input, int i) throws Exception
+	{
+		Class<?>[] types = method.getParameterTypes();
+	    Object arg = input.remove();
+		if ((arg instanceof Closure)) {
+			for (int j = i; j < types.length; j++) {
+				if (types[j].getName().startsWith("com.mincom")) {
+					Object dto = types[j].newInstance();
+					((Closure)arg).call(dto);
+					method.setArg(j, dto);
+					return;
+				}
+			}
+		}
+	    for (int j = i; j < types.length; j++) {
+			if ((arg == null) || (types[j].isAssignableFrom(arg.getClass()))) {
+				method.setArg(j, arg);
+				break;
+			}
+		}
+	}
+}
