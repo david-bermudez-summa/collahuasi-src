@@ -25,13 +25,15 @@ import org.slf4j.LoggerFactory
  *  21-Jul-2017 JAFETH  Ellipse 8
  */
 class ReceiptTaskService_receiveDocument extends ServiceHook {
-    String Version = "Version 20180903 - v5"
+    String Version = "Version 20181019 - v6"
 
     @Override
     public Object onPreExecute(Object input) {
         info(Version)
 
         ReceiptTaskCreateDocumentReceiveDTO dto = (ReceiptTaskCreateDocumentReceiveDTO) input
+
+
         log.info("##########################################################****NUEVO****#################################################################")
 
         boolean isPanolero = false;
@@ -292,63 +294,70 @@ class ReceiptTaskService_receiveDocument extends ServiceHook {
 
     public void WriteLog(String pantalla, String evento, String operacion, HookTools tools) {
         info("Class Panoles - WriteLog");
+        try {
+            MSF010Rec msf010Rec = tools.edoi.findByPrimaryKey(new MSF010Key(tableType: '+LOG', tableCode: 'LOGS_HOOK'))
+            //String dirWork = "/appliance/data/efs/ellpry/log/hooks/"
+            // String dirWork = "/appliance/data/efs/ellprod/log/hooks/"
+            String dirWork = msf010Rec.getTableDesc().toLowerCase()
+            String sFichero = dirWork + tools.commarea.UserId.toString().trim() + "_${pantalla}_hooksPanol_${tools.commarea.TodaysDate}.log";
+            File ficheros = new File(sFichero);
+            String linea = "";
 
-        String dirWork = "/appliance/data/efs/ellpry/log/hooks/"
-        // String dirWork = "/appliance/data/efs/ellprod/log/hooks/"
-        String sFichero = dirWork + tools.commarea.UserId.toString().trim() + "_${pantalla}_hooksPanol_${tools.commarea.TodaysDate}.log";
-        File ficheros = new File(sFichero);
-        String linea = "";
+            if (ficheros.exists()) {
+                info("Archivo ya creado");
 
-        if (ficheros.exists()) {
-            info("Archivo ya creado");
-
-            try {
-                BufferedWriter bw = new BufferedWriter(new FileWriter(sFichero, true));
-                linea = tools.commarea.TodaysDate.toString().substring(0, 4) + "-" + tools.commarea.TodaysDate.toString().substring(4, 6) + "-" + tools.commarea.TodaysDate.toString().substring(6, 8) + " " +
-                        tools.commarea.Time.toString().substring(0, 2) + ":" + tools.commarea.Time.toString().substring(2, 4) + ":" + tools.commarea.Time.toString().substring(4, 6) + " " +
-                        "UserId: " + tools.commarea.UserId + " [app: " + pantalla + " ,Event: " + evento + " ,Desc: " + operacion + "]\n"
-                bw.write(linea)
-                info("Se crea esta linea: " + linea);
-                bw.close()
-            } catch (Exception e) {
-                throw new EnterpriseServiceOperationException(
-                        new ErrorMessageDTO("9995", e.getMessage(), " ", 0, 0))
-
-            }
-        } else {
-            info("Archivo no creado");
-
-            FileWriter fichero = null;
-            BufferedWriter bw = null;
-            try {
-                fichero = new FileWriter(sFichero);
-                bw = new BufferedWriter(fichero);
-                info("se crea el archivo");
-                linea = tools.commarea.TodaysDate.toString().substring(0, 4) + "-" + tools.commarea.TodaysDate.toString().substring(4, 6) + "-" + tools.commarea.TodaysDate.toString().substring(6, 8) + " " +
-                        tools.commarea.Time.toString().substring(0, 2) + ":" + tools.commarea.Time.toString().substring(2, 4) + ":" + tools.commarea.Time.toString().substring(4, 6) + " " +
-                        "UserId: " + tools.commarea.UserId + " [app: " + pantalla + " ,Event: " + evento + " ,Desc: " + operacion + "]\n"
-
-                bw.write(linea)
-                bw.close()
-                info("Se crea esta linea: " + linea);
-            } catch (Exception e) {
-                info(e.printStackTrace())
-                throw new EnterpriseServiceOperationException(
-                        new ErrorMessageDTO("9995", e.getMessage(), " ", 0, 0))
-
-            } finally {
                 try {
-                    if (null != fichero) {
-                        fichero.close();
-                    }
-                } catch (Exception e2) {
-
-                    info(e2.printStackTrace());
+                    BufferedWriter bw = new BufferedWriter(new FileWriter(sFichero, true));
+                    linea = tools.commarea.TodaysDate.toString().substring(0, 4) + "-" + tools.commarea.TodaysDate.toString().substring(4, 6) + "-" + tools.commarea.TodaysDate.toString().substring(6, 8) + " " +
+                            tools.commarea.Time.toString().substring(0, 2) + ":" + tools.commarea.Time.toString().substring(2, 4) + ":" + tools.commarea.Time.toString().substring(4, 6) + " " +
+                            "UserId: " + tools.commarea.UserId + " [app: " + pantalla + " ,Event: " + evento + " ,Desc: " + operacion + "]\n"
+                    bw.write(linea)
+                    info("Se crea esta linea: " + linea);
+                    bw.close()
+                } catch (Exception e) {
                     throw new EnterpriseServiceOperationException(
-                            new ErrorMessageDTO("9995", e2.getMessage(), " ", 0, 0))
+                            new ErrorMessageDTO("9995", e.getMessage(), " ", 0, 0))
 
                 }
+            } else {
+                info("Archivo no creado");
+
+                FileWriter fichero = null;
+                BufferedWriter bw = null;
+                try {
+                    fichero = new FileWriter(sFichero);
+                    bw = new BufferedWriter(fichero);
+                    info("se crea el archivo");
+                    linea = tools.commarea.TodaysDate.toString().substring(0, 4) + "-" + tools.commarea.TodaysDate.toString().substring(4, 6) + "-" + tools.commarea.TodaysDate.toString().substring(6, 8) + " " +
+                            tools.commarea.Time.toString().substring(0, 2) + ":" + tools.commarea.Time.toString().substring(2, 4) + ":" + tools.commarea.Time.toString().substring(4, 6) + " " +
+                            "UserId: " + tools.commarea.UserId + " [app: " + pantalla + " ,Event: " + evento + " ,Desc: " + operacion + "]\n"
+
+                    bw.write(linea)
+                    bw.close()
+                    info("Se crea esta linea: " + linea);
+                } catch (Exception e) {
+                    info(e.printStackTrace())
+                    throw new EnterpriseServiceOperationException(
+                            new ErrorMessageDTO("9995", e.getMessage(), " ", 0, 0))
+
+                } finally {
+                    try {
+                        if (null != fichero) {
+                            fichero.close();
+                        }
+                    } catch (Exception e2) {
+
+                        info(e2.printStackTrace());
+                        throw new EnterpriseServiceOperationException(
+                                new ErrorMessageDTO("9995", e2.getMessage(), " ", 0, 0))
+
+                    }
+                }
             }
+        } catch (Exception e) {
+            info("Exception: " + e.getMessage())
+            throw new EnterpriseServiceOperationException(
+                    new ErrorMessageDTO("+LOG", e.getMessage(), "WareHouseId", 0, 0))
         }
     }
 
